@@ -1,0 +1,26 @@
+image: jonaskello/docker-and-compose:latest
+
+# When using dind, it's wise to use the overlayfs driver for
+# improved performance.
+variables:
+  DOCKER_DRIVER: overlay2
+  COMMIT_IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME
+  RELEASE_IMAGE_TAG: $CI_REGISTRY_IMAGE:latest
+  DOCKER_TLS_CERTDIR: ""
+
+services:
+- docker:dind
+
+before_script:
+- docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+
+build:
+  stage: build
+  tags:
+    - docker
+  script:
+    - docker build -t $COMMIT_IMAGE_TAG .
+    - docker push $COMMIT_IMAGE_TAG
+    - docker pull $COMMIT_IMAGE_TAG
+    - docker tag $COMMIT_IMAGE_TAG $RELEASE_IMAGE_TAG
+    - docker push $RELEASE_IMAGE_TAG    
